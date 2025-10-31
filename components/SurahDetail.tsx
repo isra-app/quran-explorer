@@ -59,7 +59,9 @@ const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onGoToNextSurah }) => 
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const individualVerseRefs = useRef<Map<string, HTMLElement>>(new Map());
-  
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const visibleVerseElements = useRef(new Set<HTMLElement>());
+
   useEffect(() => {
     return () => {
       if (audioRef.current) {
@@ -68,6 +70,65 @@ const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onGoToNextSurah }) => 
       }
     };
   }, []);
+
+  // This effect runs on unmount and saves the last visible verse.
+  useEffect(() => {
+    return () => {
+      let topVerseKey: string | null = null;
+      let minTop = Infinity;
+      const containerTop = scrollContainerRef.current?.getBoundingClientRect().top ?? 0;
+
+      visibleVerseElements.current.forEach(el => {
+          const rect = el.getBoundingClientRect();
+          // Consider verses whose top is at or below the container's top
+          if (rect.top >= containerTop && rect.top < minTop) {
+              minTop = rect.top;
+              topVerseKey = el.id.replace('verse-', '');
+          }
+      });
+
+      if (topVerseKey) {
+          localStorage.setItem('quranExplorer-lastRecited', JSON.stringify({ surahId, surahName, verseKey: topVerseKey }));
+      }
+    };
+  }, [surahId, surahName]);
+
+  // This effect sets up the intersection observer to track visible verses.
+  useEffect(() => {
+    if (loading || !scrollContainerRef.current) return;
+
+    const options = {
+        root: scrollContainerRef.current,
+        rootMargin: '0px',
+        threshold: 0.1, // A verse is "visible" if 10% is showing
+    };
+
+    const callback = (entries: IntersectionObserverEntry[]) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                visibleVerseElements.current.add(entry.target as HTMLElement);
+            } else {
+                visibleVerseElements.current.delete(entry.target as HTMLElement);
+            }
+        });
+    };
+
+    const observer = new IntersectionObserver(callback, options);
+    const verseElementsMap = individualVerseRefs.current;
+    
+    verseElementsMap.forEach(el => {
+        if (el) observer.observe(el);
+    });
+
+    return () => {
+        verseElementsMap.forEach(el => {
+            if (el) observer.unobserve(el);
+        });
+        observer.disconnect();
+        visibleVerseElements.current.clear();
+    };
+  }, [loading]);
+
 
   useEffect(() => {
     const fetchSurahData = async () => {
@@ -115,7 +176,6 @@ const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onGoToNextSurah }) => 
     const audioUrl = verseData?.audioUrl;
     if (!audioUrl) return;
 
-    localStorage.setItem('quranExplorer-lastRecited', JSON.stringify({ surahId, surahName, verseKey }));
     setSelectedVerseKey(verseKey);
 
     if (audioRef.current && playingVerseKey === verseKey) {
@@ -149,7 +209,7 @@ const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onGoToNextSurah }) => 
         setPlayingVerseKey(null);
       }
     }
-  }, [versesWithDetails, playingVerseKey, surahId, surahName, onGoToNextSurah]);
+  }, [versesWithDetails, playingVerseKey, surahId, onGoToNextSurah]);
 
   const handleSelectVerse = (verseKey: string) => {
     if (selectedVerseKey === verseKey) {
@@ -194,7 +254,7 @@ const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onGoToNextSurah }) => 
                 )}
             </div>
 
-            <div dir="rtl" className="no-scrollbar font-quran text-2xl md:text-3xl leading-relaxed text-center text-gray-800 flex-grow overflow-y-auto">
+            <div ref={scrollContainerRef} dir="rtl" className="no-scrollbar font-quran text-2xl md:text-3xl leading-relaxed text-center text-gray-800 flex-grow overflow-y-auto">
                 {versesWithDetails.map(verse => {
                     const isSelected = selectedVerseKey === verse.verse_key;
                     const isPlaying = playingVerseKey === verse.verse_key;
