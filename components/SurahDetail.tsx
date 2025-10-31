@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { getSurahDetail } from '../services/quranApi';
-import { PlayIcon, PauseIcon, CopyIcon } from './icons/Icons';
+import { PlayIcon, PauseIcon, CopyIcon, VerseEndIcon } from './icons/Icons';
 
 interface SurahDetailProps {
   surah: {
@@ -37,6 +37,14 @@ const SkeletonPageView: React.FC = () => (
         </div>
     </div>
 );
+
+const toEasternArabicNumerals = (num: string | number): string => {
+    const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    return String(num).split('').map(digit => {
+        const parsedDigit = parseInt(digit, 10);
+        return isNaN(parsedDigit) ? digit : arabicNumerals[parsedDigit];
+    }).join('');
+};
 
 const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onGoToNextSurah }) => {
   const { id: surahId, name: surahName, name_arabic: surahNameArabic, verseKey: verseKeyToScrollTo } = surah;
@@ -186,7 +194,7 @@ const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onGoToNextSurah }) => 
                 )}
             </div>
 
-            <div dir="rtl" className="no-scrollbar font-quran text-3xl md:text-4xl leading-relaxed text-center text-gray-800 flex-grow overflow-y-auto">
+            <div dir="rtl" className="no-scrollbar font-quran text-2xl md:text-3xl leading-relaxed text-center text-gray-800 flex-grow overflow-y-auto">
                 {versesWithDetails.map(verse => {
                     const isSelected = selectedVerseKey === verse.verse_key;
                     const isPlaying = playingVerseKey === verse.verse_key;
@@ -203,8 +211,11 @@ const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onGoToNextSurah }) => 
                                 {verse.text_uthmani}
                             </span>
                             
-                            <span className="inline-flex items-center justify-center w-8 h-8 mx-2 border-2 border-[#158c6e] text-[#158c6e] rounded-full text-sm font-sans font-bold select-none align-middle">
-                                {verseNumber}
+                            <span className="relative inline-flex items-center justify-center w-9 h-9 mx-1 align-middle select-none">
+                                <VerseEndIcon className="absolute w-full h-full text-teal-100" />
+                                <span className="relative font-quran text-sm font-bold text-teal-800">
+                                    {toEasternArabicNumerals(verseNumber)}
+                                </span>
                             </span>
                         </React.Fragment>
                     );
