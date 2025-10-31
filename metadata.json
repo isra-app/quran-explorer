@@ -1,0 +1,5 @@
+{
+  "name": "Quran Explorer",
+  "description": "A modern and elegant web application to read, listen to, and explore the Holy Quran. It provides Arabic text, English translations, and audio recitations for every verse.",
+  "requestFramePermissions": []
+}
