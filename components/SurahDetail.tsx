@@ -186,7 +186,7 @@ const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onGoToNextSurah }) => 
                 )}
             </div>
 
-            <div dir="rtl" className="no-scrollbar font-quran text-3xl md:text-4xl leading-loose text-center text-gray-800 flex-grow overflow-y-auto">
+            <div dir="rtl" className="no-scrollbar font-quran text-3xl md:text-4xl leading-relaxed text-center text-gray-800 flex-grow overflow-y-auto">
                 {versesWithDetails.map(verse => {
                     const isSelected = selectedVerseKey === verse.verse_key;
                     const isPlaying = playingVerseKey === verse.verse_key;
